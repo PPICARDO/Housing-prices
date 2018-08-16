@@ -41,9 +41,19 @@
 
 \section*{Abstract}
 
-<<lib, echo=FALSE,warning=FALSE,message=FALSE>>=
+<<lib, warning=FALSE,message=FALSE>>=
+
+summary(cars)
 
 @
+hola dhaksdjfhaksjdfhalkjsdhflakjdshf \ref{pl1}
+\begin{figure}
+<<pl, warning=FALSE,message=FALSE>>=
+
+plot(pressure)
+@
+\caption{hola \label{pl1}}
+\end{figure}
 
 fkjgaldskgjakdfhgakksdh
 \end{document}
