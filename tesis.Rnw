@@ -1,0 +1,49 @@
+\documentclass[12pt]{article}
+\usepackage{multirow}
+\usepackage{mathtools}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{rotating}
+\usepackage{booktabs}
+\usepackage{verbatim}
+\usepackage{mathrsfs}
+\usepackage{hyperref}
+\usepackage{pdflscape}
+\usepackage{caption}
+\usepackage{tablefootnote}
+\usepackage{url}
+\usepackage[authoryear]{natbib}
+\topmargin     -1.5cm  % read Lamport p.163
+\oddsidemargin -0.04cm % read Lamport p.163
+\evensidemargin -0.04cm % same as oddsidemargin but for left-hand pages
+\textwidth     16.59cm
+\textheight     22.94cm
+\parskip       7.2pt  % sets spacing between paragraphs
+\parindent       3mm  % sets leading space for paragraphs
+\usepackage{verbatim}
+\usepackage{setspace}
+\usepackage[utf8]{inputenc}
+\usepackage{authblk}
+\usepackage{pdfpages}
+\usepackage{fancyhdr}
+\fancyhf{}
+\captionsetup{font={stretch=1}}
+\renewcommand{\headrulewidth}{0pt}
+\newcommand{\pkg}[1]{{\fontseries{b}\selectfont #1}}
+\pagestyle{fancy}
+\rfoot{\thepage}
+\linespread{1.5}
+\title{Tesis}
+\author{PP}
+
+\begin{document}
+\maketitle
+
+\section*{Abstract}
+
+<<lib, echo=FALSE,warning=FALSE,message=FALSE>>=
+
+@
+
+
+\end{document}
