@@ -222,9 +222,7 @@ save(meli_feb_2,file="2018_02_20_meli_v1.Rda")
 
 # para traerlo
 setwd("C:/Users/Usuario/Documents/Housing-prices/02_meli")
-load("2018_02_20_meli_v1.Rda")
-
-#load("2018_02_20_meli_v1.Rda")
+load("meli febrero data.RData")
 
 # falta ver el tema de duplicados y sacar malos datos
 
@@ -247,7 +245,7 @@ meli_feb_mapa <- ggmap(map) +
   geom_point(data=meli_feb_map, aes(x = long, y = lat, color=apto_casa) , size=0.6 , alpha=0.5)+
   scale_color_manual(breaks=c("Apartamentos", "Casas", "Otros/Sin clasificar"), values=c("dodgerblue","firebrick1", "gray20"))
 meli_feb_mapa 
-save(meli_feb_mapa, file = "meli_feb_mapa.Rdata")
+save(meli_feb_mapa, file = "meli_feb_mapa2.Rdata")
 load(file = "meli_feb_mapa.Rdata")
 
 # 4404 obs no tienen lat y long y no se grafican
