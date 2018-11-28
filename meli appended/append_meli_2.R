@@ -157,7 +157,6 @@ test_3$sup_contru_2 <- NULL
  # para transformar las observaciones que están en 1900. Las de 2013 en adelante las dejo igual
  test_3$antiguedad2 <- ifelse((test_3$antiguedad2 > 1700), (2018-test_3$antiguedad2),test_3$antiguedad2)
  #  las que están en negativo son a futuro: "En construccion"
-
  
  # complemento las dos variables, completando las que están NA en antiguedad2
  test_3$antiguedad2 <- ifelse(!is.na(test_3$antiguedad2), test_3$antiguedad2, test_3$antiguedad)
@@ -174,6 +173,7 @@ test_3$sup_contru_2 <- NULL
   test_3$antiguedad2 <- as.numeric(test_3$antiguedad2)
   summary(test_3$antiguedad2)
   str(test_3$antiguedad2) # 90702 valores incluido el 999 "Sin definir"
+  # antiguedad2 queda como la que está con toda la info, recordar el 999
   
   
   #guardo el archivo
@@ -267,8 +267,7 @@ test_3$barrio <- as.factor(test_3$barrio) # Factor w/ 68 levels
 View(test_3$tipo_inmueble_2)
 View(test_3$tipo_inmueble)
 test_3$tipo_inmueble_2 <- NULL
-
-tipo_inmueble_3
+str(test_3$tipo_inmueble)
 
 ##### dormitorios
 View(test_3$dormitorios)
@@ -448,6 +447,12 @@ summary(test_3$expensas)
 View(test_3$tipo_inmueble) # ok , factor
 View(test_3$tipo_inmueble_3) # lo dejo como character
 
+#### estado
+View(test_3$estado)
+test_3$estado <- sub("MLU1892-ESTADO-BUENO","Bueno",test_3$estado, fixed = TRUE)
+test_3$estado <- as.factor(test_3$estado)
+
+
 ############################
 save(test_3, file = "muestra_var_meli7.Rda")
 #cargo el archivo
@@ -460,6 +465,9 @@ str(test_3)
 test_3$start_time <- gsub(" .*", "", test_3$start_time)
 test_3$start_time <- as.POSIXct(test_3$start_time)
 View(test_3$start_time)
+test_3$stop_time <- gsub(" .*", "", test_3$stop_time)
+test_3$stop_time <- as.POSIXct(test_3$stop_time)
+View(test_3$stop_time)
 # recordar que los NA refieren a bajadas de febrero marzo y abril
 
 ############################
@@ -468,109 +476,350 @@ save(test_3, file = "muestra_var_meli8.Rda")
 load(file = "muestra_var_meli8.Rda")
 str(test_3)
 
+
+
+#### sacar atípicos de las variables numéricas
+
+##### precio 
+test_4 <- data.frame(subset(test_3,precio < 4000001))
+test_4 <- data.frame(subset(test_4,precio > 3000))
+summary(test_4$precio)
+summary(test_4)
+###########################################
+str(test_4) # 233524 obs. of  91 variables:
+
+
+##### lat long
 #lat long como numéricas
 test_3$long <- as.numeric(test_3$long)
 test_3$lat <- as.numeric(test_3$lat)
-
-
-# Filtrar un poco precio 
-test_4 <- data.frame(subset(test_3,precio < 5000001))
-test_4 <- data.frame(subset(test_4,precio > 1111))
-summary(test_4$precio)
-###########################################
-str(test_4) # 233524 obs. of  91 variables:
-View(test_4$precio)
-###########################################
+### paso a NA los valores no coherentes (fuera de coordenadas de Montevideo y alrededores)
+test_4$long[test_4$long < -57] <- NA
+test_4$long[test_4$long > -54] <- NA
+### lat
+test_4$lat[test_4$lat > -30] <- NA
+test_4$lat[test_4$lat < -36] <- NA
 
 
 
-####################### extra algunos gráficos
-# ver histograma de los precios
-library(ggplot2)
-qplot(test_4$precio/1000,
-      geom="histogram",
-      binwidth=25,  
-      main="Histograma de precios 2018", 
-      xlab="Precio en miles")
-
-p<- ggplot(data=test_4, aes(test_4$precio/1000)) + 
-  geom_histogram(aes(y =..count..), 
-                 col="red", 
-                 fill="blue", 
-                 alpha=.2) + 
-  geom_density(col=2) + 
-  labs(title="Histograma de precios 2018 - MELI", x="Precio", y="Observaciones")
-p
-
-# tomo una muestra con sup_constru y moneda USDpara probar cosas simples
-library("tibble")    
-sample_meli <- filter(test_4, sup_constru>1, sup_constru<700, moneda == "USD")
-summary(sample_meli)
-
-############################
-save(sample_meli, file = "muestra_var_meli8.Rda")
+save(test_4, file = "muestra_var_meli9.Rda")
 #cargo el archivo
-load(file = "muestra_var_meli8.Rda")
+load(file = "muestra_var_meli9.Rda")
+str(test_4)
 
-str(sample_meli) # 110657 obs. of  91 variables:
+############ factores que quedan por modificar (la mayoria es ver el tema de sí)
+
+# cocina
+test_4$cocina <- gsub("S.*","Si",test_4$cocina)
+test_4$cocina <- as.factor(test_4$cocina)
+
+# biblio
+test_4$biblio <- gsub("S.*","Si",test_4$biblio)
+test_4$biblio <- as.factor(test_4$biblio)
+
+# comedor
+test_4$comedor <- gsub("S.*","Si",test_4$comedor)
+test_4$comedor <- as.factor(test_4$comedor)
+
+# entrepiso 
+test_4$entrepiso <- gsub("S.*","Si",test_4$entrepiso)
+test_4$entrepiso <- as.factor(test_4$entrepiso)
+
+# escritorio
+test_4$escritorio <- gsub("S.*","Si",test_4$escritorio)
+test_4$escritorio <- as.factor(test_4$escritorio)
+
+# estar
+test_4$estar <- gsub("S.*","Si",test_4$estar)
+test_4$estar <- as.factor(test_4$estar)
+
+# lavadero y lavadero_2 merging
+test_4$lavadero <- gsub("S.*","Si",test_4$lavadero)
+test_4$lavadero_2 <- gsub("S.*","Si",test_4$lavadero_2)
+test_4$lavadero <- ifelse(!is.na(test_4$lavadero), test_4$lavadero, test_4$lavadero_2)
+test_4$lavadero_2 <- NULL
+test_4$lavadero <- as.factor(test_4$lavadero)
+
+# livingcomedor
+test_4$livingcomedor <- gsub("S.*","Si",test_4$livingcomedor)
+test_4$livingcomedor <- as.factor(test_4$livingcomedor)
+
+# living
+test_4$living <- gsub("S.*","Si",test_4$living)
+test_4$living <- as.factor(test_4$living)
+
+# estado quitar "-" por NA
+test_4$estado <- gsub("-","NA",test_4$estado)
+test_4$estado <- as.factor(test_4$estado)
+
+# patio
+test_4$patio <- gsub("S.*","Si",test_4$patio)
+test_4$patio <- as.factor(test_4$patio)
+
+# toilette
+test_4$toilette <- gsub("S.*","Si",test_4$toilette)
+test_4$toilette <- as.factor(test_4$toilette)
+
+# aircond
+test_4$aircond <- gsub("S.*","Si",test_4$aircond)
+test_4$aircond <- as.factor(test_4$aircond)
+
+# calefacc
+test_4$calefacc <- gsub("S.*","Si",test_4$calefacc)
+test_4$calefacc <- as.factor(test_4$calefacc)
+
+# asc_serv
+test_4$asc_serv <- gsub("S.*","Si",test_4$asc_serv)
+test_4$asc_serv <- as.factor(test_4$asc_serv)
+
+#  jardin
+test_4$jardin <- gsub("S.*","Si",test_4$jardin)
+test_4$jardin <- as.factor(test_4$jardin)
+
+# kitchenette
+test_4$kitchenette <- gsub("S.*","Si",test_4$kitchenette)
+test_4$kitchenette <- as.factor(test_4$kitchenette)
+
+# losa_rad
+test_4$losa_rad <- gsub("S.*","Si",test_4$losa_rad)
+test_4$losa_rad <- as.factor(test_4$losa_rad)
+
+# parrillero
+test_4$parrillero <- gsub("S.*","Si",test_4$parrillero)
+test_4$parrillero <- as.factor(test_4$parrillero)
+
+# piscina ver otros niveles tmb
+test_4$piscina <- gsub("S.*","Si",test_4$piscina)
+test_4$piscina <- gsub("\\?+","'",iconv(test_4$piscina, "latin1", "UTF-8", sub=""))
+test_4$piscina <- gsub("Común*","Si",test_4$piscina) # las pongo como Si porque son muy pocas
+test_4$piscina <- gsub("Climatizada*","Si",test_4$piscina)
+test_4$piscina <- gsub("Exterior*","Si",test_4$piscina)
+test_4$piscina <- as.factor(test_4$piscina)
+View(test_4$piscina)
+
+# salon_comunal
+test_4$salon_comunal <- gsub("S.*","Si",test_4$salon_comunal)
+test_4$salon_comunal <- as.factor(test_4$salon_comunal)
+
+# seguridad
+test_4$seguridad <- gsub("S.*","Si",test_4$seguridad)
+test_4$seguridad <- as.factor(test_4$seguridad)
+
+# jacuzzi
+test_4$jacuzzi <- gsub("S.*","Si",test_4$jacuzzi)
+test_4$jacuzzi <- as.factor(test_4$jacuzzi)
+
+# operacion_2 no indica nada, solo que es venta
+test_4$operacion_2 <- NULL
+
+# amoblado varios niveles para corregir
+test_4$amoblado <- gsub("\\?+","'",iconv(test_4$amoblado, "latin1", "UTF-8", sub=""))
+test_4$amoblado <- gsub("S.*","Si",test_4$amoblado)
+test_4$amoblado <- gsub("si*","Si",test_4$amoblado)
+test_4$amoblado <- gsub("N.*","No",test_4$amoblado)
+test_4$amoblado <- gsub("ju.*","Si",test_4$amoblado)
+test_4$amoblado <- gsub("Plac.*","Si",test_4$amoblado)
+test_4$amoblado <- sub("Opcional","Si",test_4$amoblado, fixed = TRUE) # supuesto, es una obs nomás
+test_4$amoblado <- sub("Opcional","Si",test_4$amoblado, fixed = TRUE) # supuesto, es una obs nomás
+test_4$amoblado <- as.factor(test_4$amoblado)
+
+# tipo_edif ver niveles
+test_4$tipo_edif <- gsub("\\?+","'",iconv(test_4$tipo_edif, "latin1", "UTF-8", sub=""))
+test_4$tipo_edif <- sub("Sí","Apartamento",test_4$tipo_edif, fixed = TRUE) # supongo que Sí es igual a Apartamento
+test_4$tipo_edif <- sub("-","NA",test_4$tipo_edif, fixed = TRUE)
+test_4$tipo_edif <- as.factor(test_4$tipo_edif)
+
+# orientacion ver niveles repetidos acortar
+test_4$orientacion <- sub("'INTERNO'","Interno",test_4$orientacion, fixed = TRUE)
+test_4$orientacion <- sub("'FRENTE'","Frente",test_4$orientacion, fixed = TRUE)
+test_4$orientacion <- sub("'CONTRAFRENTE'","Contrafrente",test_4$orientacion, fixed = TRUE)
+test_4$orientacion <- as.factor(test_4$orientacion)
+
+# altillo
+test_4$altillo <- gsub("S.*","Si",test_4$altillo)
+test_4$altillo <- as.factor(test_4$altillo)
+
+# sotano
+test_4$sotano <- gsub("S.*","Si",test_4$sotano)
+test_4$sotano <- as.factor(test_4$sotano)
+
+# alarma y alarma_2
+test_4$alarma <- gsub("S.*","Si",test_4$alarma)
+test_4$alarma_2 <- gsub("S.*","Si",test_4$alarma_2)
+test_4$alarma <- ifelse(!is.na(test_4$alarma), test_4$alarma, test_4$alarma_2)
+test_4$alarma_2 <- NULL
+test_4$alarma <- as.factor(test_4$alarma)
 
 
 
-# Mapas ----
-# vamos a usar esta guía https://statisticaloddsandends.wordpress.com/2018/10/25/getting-started-stamen-maps-with-ggmap/
+# estufa_lena y estufa_lena2
+test_4$estufa_lena <- gsub("S.*","Si",test_4$estufa_lena)
+test_4$estufa_lena2 <- gsub("S.*","Si",test_4$estufa_lena2)
+test_4$estufa_lena <- ifelse(!is.na(test_4$estufa_lena), test_4$estufa_lena, test_4$estufa_lena2)
+test_4$estufa_lena2 <- NULL
+test_4$estufa_lena <- as.factor(test_4$estufa_lena)
 
-library(caret)
-library(dplyr)
-library(ggmap)
+# porton_electr
+test_4$porton_electr <- gsub("S.*","Si",test_4$porton_electr)
+test_4$porton_electr <- as.factor(test_4$porton_electr)
 
-df <- sample_meli %>% group_by(barrio) %>%
-  summarize(median_price = median(precio/sup_constru, na.rm = TRUE), quantity = n(),
-            latitude = mean(lat, na.rm = TRUE), longitude = mean(long, na.rm = TRUE))
+# garage  ver niveles y reducir a Si/No y Opcional porque con números son pocas obs
+test_4$garage <- gsub(" Autos","",test_4$garage)
+test_4$garage <- gsub("Garage","Si",test_4$garage)
+test_4$garage <- gsub("S.*","Si",test_4$garage)
+test_4$garage <- sub("30","Si",test_4$garage, fixed = TRUE) # supuesto
+test_4$garage <- sub("6","Si",test_4$garage, fixed = TRUE) # supuesto
+test_4$garage <- sub("3","Si",test_4$garage, fixed = TRUE) # supuesto
+test_4$garage <- sub("2","Si",test_4$garage, fixed = TRUE) # supuesto
+test_4$garage <- sub("1","Si",test_4$garage, fixed = TRUE) # supuesto
+test_4$garage <- sub("0","No",test_4$garage, fixed = TRUE) # supuesto
+test_4$garage <- as.factor(test_4$garage)
 
-ggplot() + 
-  geom_point(data = df, mapping = aes(x = longitude, y = latitude, 
-                                      col = median_price/1000, size = quantity)) +
-  scale_color_distiller(palette = "YlOrRd", direction = 1)+ 
-  labs(title="Mediana de precios 2018-MELI por coordenadas")
+# tipo_ubicacion mergear "otro"
+test_4$tipo_ubicacion <- sub("Otro lugar","Otro",test_4$tipo_ubicacion, fixed = TRUE) # supuesto
+test_4$tipo_ubicacion <- as.factor(test_4$tipo_ubicacion)
+
+# num_plantas ver "más de 3"
+test_4$num_plantas <- gsub("\\?+","'",iconv(test_4$num_plantas, "latin1", "UTF-8", sub=""))
+test_4$num_plantas <- as.factor(test_4$num_plantas)
+
+# gas_caneria
+test_4$gas_caneria <- gsub("S.*","Si",test_4$gas_caneria)
+test_4$gas_caneria <- as.factor(test_4$gas_caneria)
+
+# ascensores
+test_4$ascensores <- gsub("S.*","Si",test_4$ascensores)
+test_4$ascensores <- as.factor(test_4$ascensores)
+
+# deposito
+test_4$deposito <- gsub("S.*","Si",test_4$deposito)
+test_4$deposito <- as.factor(test_4$deposito)
+
+# balcon
+test_4$balcon <- gsub("S.*","Si",test_4$balcon)
+test_4$balcon <- as.factor(test_4$balcon)
+
+# quincho
+test_4$quincho <- gsub("S.*","Si",test_4$quincho)
+test_4$quincho <- as.factor(test_4$quincho)
+
+# bano_soc
+test_4$bano_soc <- gsub("S.*","Si",test_4$bano_soc)
+test_4$bano_soc <- as.factor(test_4$bano_soc)
+
+# estudio
+test_4$estudio <- gsub("S.*","Si",test_4$estudio)
+test_4$estudio <- as.factor(test_4$estudio)
+
+# porton_autom
+test_4$porton_autom <- gsub("S.*","Si",test_4$porton_autom)
+test_4$porton_autom <- as.factor(test_4$porton_autom)
+
+# chimenea
+test_4$chimenea <- gsub("S.*","Si",test_4$chimenea)
+test_4$chimenea <- as.factor(test_4$chimenea)
+
+# roof_garden
+test_4$roof_garden <- gsub("S.*","Si",test_4$roof_garden)
+test_4$roof_garden <- as.factor(test_4$roof_garden)
+
+# gas_natural
+test_4$gas_natural <- gsub("S.*","Si",test_4$gas_natural)
+test_4$gas_natural <- as.factor(test_4$gas_natural)
+
+# comercial
+test_4$comercial <- gsub("S.*","Si",test_4$comercial)
+test_4$comercial <- as.factor(test_4$comercial)
+
+# apto_credito
+test_4$apto_credito <- gsub("S.*","Si",test_4$apto_credito)
+test_4$apto_credito <- as.factor(test_4$apto_credito)
+
+# sist_ventilacion
+test_4$sist_ventilacion <- gsub("S.*","Si",test_4$sist_ventilacion)
+test_4$sist_ventilacion <- as.factor(test_4$sist_ventilacion)
+
+# desayunador
+test_4$desayunador <- gsub("S.*","Si",test_4$desayunador)
+test_4$desayunador <- as.factor(test_4$desayunador)
+
+# lobby
+test_4$lobby <- gsub("S.*","Si",test_4$lobby)
+test_4$lobby <- as.factor(test_4$lobby)
+
+# operacion_3
+test_4$operacion_3 <- gsub("S.*","Si",test_4$operacion_3)
+test_4$operacion_3 <- as.factor(test_4$operacion_3)
+test_4$operacion <- test_4$operacion_3
+test_4$operacion_3 <- NULL
+
+##### pisos_edificio
+test_4$pisos_edificio <- gsub("\\?+","'",iconv(test_4$pisos_edificio, "latin1", "UTF-8", sub=""))
+
+# CAMBIOS POSTERIORES LUEGO DE VER UN POCO LA BASE
+#### antiguedad2
+test_4$antiguedad2[test_4$antiguedad2 ==-2] <- 0 # sup
+test_4$antiguedad2[test_4$antiguedad2 ==-1] <- 0 # sup
+
+# Antiguedad, 999 de las sin definir no está muy bien, la ponemos como NA
+test_4$antiguedad2[test_4$antiguedad2 ==999] <- NA # sup
+
+# expensas
+test_4$expensas[test_4$expensas > 100000] <- NA
+test_4$expensas[test_4$expensas == 1111] <- NA
 
 
-ggplot(data = df, mapping = aes(x = longitude, y = latitude)) + 
-  geom_point(aes(col = median_price, size = quantity)) +
-  geom_text(aes(label = barrio), size = 4, nudge_y = 0.01) +
-  scale_color_distiller(palette = "YlOrRd", direction = 1)
+# sup 
+test_4$sup_constru[test_4$sup_constru > 100000] <- NA
+test_4$sup_tot[test_4$sup_tot > 100000] <- NA
+test_4$sup_terr[test_4$sup_terr > 100000] <- NA
 
 
-# en un mapa ... con ggmap
-height <- max(df$latitude, na.rm = TRUE) - min(df$latitude, na.rm = TRUE)
-width <- max(df$longitude, na.rm = TRUE) - min(df$longitude, na.rm = TRUE)
-sac_borders <- c(bottom  = -35, 
-                 top     = -34.5,
-                 left    = -56.5,
-                 right   = -55.8)
+save(test_4, file = "muestra_var_meli99.Rda") 
+#cargo el archivo
+load(file = "muestra_var_meli99.Rda")
+str(test_4) #233070 obs. of  88 variables
+summary(test_4)
 
 
-map <- get_stamenmap(sac_borders, zoom = 10, maptype = "toner-lite")
-
-ggmap(map) +
-  geom_point(data = df, mapping = aes(x = longitude, y = latitude, 
-                                      col = median_price, size = quantity)) +
-  scale_color_distiller(palette = "YlOrRd", direction = 1)+ 
-  labs(title="Mediana de precios por zonas")
 
 
-# ahora otro intento con leaflet y todos los puntos, similar al de transacciones
-library(leaflet)
-library(htmltools)
-library(dplyr)
-library(ggmap)
 
-qpal <- colorQuantile("YlOrRd", sample_meli$precio/sample_meli$sup_constru, n = 9)
+# última para remover precios 11111 que noto que hay muchos
+test_4 <- data.frame(subset(test_4,precio !=1111111))
+test_4 <- data.frame(subset(test_4,precio !=111111))
+test_4 <- data.frame(subset(test_4,precio !=11111))
+test_4 <- data.frame(subset(test_4,precio !=222222))
+test_4 <- data.frame(subset(test_4,precio !=333333))
+test_4 <- data.frame(subset(test_4,precio !=444444))
+test_4 <- data.frame(subset(test_4,precio !=666666))
+test_4 <- data.frame(subset(test_4,precio !=666666))
+test_4 <- data.frame(subset(test_4,precio !=666666))
+test_4 <- data.frame(subset(test_4,precio !=999999))
+test_4 <- data.frame(subset(test_4,precio !=123456))
 
-mapa_meli <- leaflet(sample_meli) %>% 
-  addTiles() %>% 
-  fitBounds(-56.4,-34.9,-55.9,-34.8) %>% 
-  addCircleMarkers(stroke=FALSE, color=~qpal(sample_meli$precio/sample_meli$sup_constru),fillOpacity = 0.2, radius = runif(10, 2, 5),label = ~htmlEscape(lat)) %>% 
-  addLegend("bottomright", pal = qpal, values = ~sample_meli$precio/sample_meli$sup_constru,title = "USDM2 en USD 2018 (MELI)",opacity = 1)
+#otros puntos atípicos para sacar de var numéricas
+test_4$sup_constru[test_4$sup_constru ==2] <- NA
+test_4$sup_constru[test_4$sup_constru ==2] <- NA
 
-# Ojo que el mapa enlentece la machine
-mapa_meli
+
+save(test_4, file = "muestra_var_meli99.Rda") 
+#cargo el archivo
+load(file = "muestra_var_meli99.Rda")
+str(test_4) #232867 obs. of  88 variables
+summary(test_4)
+
+# ver cuántas propiedades únicas tengo:
+# únicas en ID (publicación)
+length(unique(unlist(test_4[1])))
+# 81311
+
+# únicas en ID título tipo inmueble y precio
+length(unique(unlist(test_4[1:4])))
+# 130649
+
+# únicas
+length(unique(unlist(test_4[1:2])))
+# 125791
+
+
