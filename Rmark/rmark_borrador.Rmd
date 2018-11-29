@@ -1,0 +1,205 @@
+---
+title: "Predicción de precios de la vivienda en Montevideo"
+author: "Pablo Picardo"
+date: "10 de noviembre de 2018"
+output:
+  html_document: default
+  pdf_document: default
+subtitle: Reunión con NDS y Fernando
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+setwd("C:/Users/Usuario/Documents/Housing-prices-tesina")
+library(data.table)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(DT)
+library(tidyr)
+library(corrplot)
+library(leaflet)
+library(lubridate)
+library(lattice)
+```
+
+# **¿Qué tengo?** 
+
+- Dataset con datos de Mercadolibre para febrero a setiembre 2018
+- Datos de transacciones (DGR) con características de catastro (DGC) y ubicación (SHX)
+
+## Algunas dudas
+
+- Selección de aproximadamente 90 variables en Mercadolibre
+- Merge hecho de DGR+DGC+SHX 
+- Moneda de valuación, ¿dejo todo en USD?
+
+# **Objetivo inmediato (Diciembre 2018)**
+
+1. Análisis descriptivo de los datos
+2. Análisis muy preliminar de la diferencia entre bases de datos
+3. Modelo lineal hedónico y árboles
+
+Produto: documento/borrador
+
+# **Objetivo corto plazo (Marzo 2019)**
+
+1. Análisis más desarrollado de las diferencias de precios
+2. *Horse race* entre lineal, trees y al menos uno más (¿stacking como el DT de IESTA?)
+3. **Tesina terminada en UdelarTeX**
+
+# **Objetivo mediano plazo (Junio 2019) **
+
+- Poner bases de datos de oferta a disposición en *kaggle* y de transacciones (*anonimizadas*)
+- Propuesta de análisis de brecha de precios como indicador de actividad del sector
+- Presentar el documento en algún lado, si está potable
+
+# **Presentaremos un poco los datos**
+
+Utilizamos en una primera aproximación los datos no duplicados de mercadolibre, propiedades con valores en USD, entre 10.000 y 1.500.000 USD, ubicadas en Montevideo, Uruguay.
+
+## Datos ofertas de Mercadolibre
+
+Levanto los datos de MELI, que tienen solo algunas variables (muy pocas).
+```{r levanto_meli, include=FALSE}
+library(dplyr)
+library(stargazer)
+load("~/Housing-prices-tesina/meli appended/muestra_var_meli.Rda")
+# Selecciono las variable numéricas y factor
+meli_sample_num <- select(sample_meli,"tipo_inmueble","precio","moneda","condicion","barrio",
+                          "lat","long","terraza","banos","dormitorios","tipo_edif","dormitorios",
+                          "orientacion", "estado","sup_constru","sup_terr",
+                          "mes","tipo_ubicacion","luminosidad")
+```
+
+### Observaciones en cada mes, no varían demasiado 
+Ver esta parte que no me sale!!! meses as.Date_???
+
+```{r echo=TRUE, message=FALSE, warning=FALSE, , echo=TRUE}
+
+meli_sample$mes0 <- ifelse(meli_sample$mes=="febrero", "02", meli_sample$mes)
+meli_sample$mes0 <- ifelse(meli_sample$mes=="marzo", "03", meli_sample$mes)
+meli_sample$mes0 <- ifelse(meli_sample$mes=="abril", "04", meli_sample$mes)
+meli_sample$mes0 <- ifelse(meli_sample$mes=="mayo", "05", meli_sample$mes)
+meli_sample$mes0 <- ifelse(meli_sample$mes=="junio", "06", meli_sample$mes)
+meli_sample$mes0 <- ifelse(meli_sample$mes=="julio", "07", meli_sample$mes)
+meli_sample$mes0 <- ifelse(meli_sample$mes=="agosto", "08", meli_sample$mes)
+meli_sample$mes0 <- ifelse(meli_sample$mes=="setiembre", "09", meli_sample$mes)
+
+meli_sample %>% 
+  group_by(mes0) %>% count() %>% 
+  ggplot(aes(x=mes0,y=n)) +
+  geom_bar(stat="identity", fill="red")
+
+histogram(meli_sample$mes, col="skyblue", xlab = "mes", main="Distribución de ofertas de Mercadolibre por mes (muestra de 160 mil obs)")
+
+```
+
+### Algunos datos descriptivos de esta muestra
+Luego lo presentaré con gráficas, etc. de forma más prolija.
+```{r eval=FALSE, , echo=TRUE, include=FALSE}
+summary(meli_sample)
+```
+
+### Tabla con datos descriptivos de las pocas variables seleccionadas y filtradas
+```{r eval=FALSE, , echo=TRUE, include=FALSE}
+stargazer(meli_sample, type= "html")
+```
+
+<table style="text-align:center"><tr><td colspan="8" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Statistic</td><td>N</td><td>Mean</td><td>St. Dev.</td><td>Min</td><td>Pctl(25)</td><td>Pctl(75)</td><td>Max</td></tr>
+<tr><td colspan="8" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">precio</td><td>165,545</td><td>221,516.500</td><td>176,094.400</td><td>10,200</td><td>124,360</td><td>250,000</td><td>1,494,900</td></tr>
+<tr><td style="text-align:left">lat</td><td>165,545</td><td>-34.894</td><td>0.026</td><td>-35.675</td><td>-34.908</td><td>-34.886</td><td>-33.047</td></tr>
+<tr><td style="text-align:left">long</td><td>165,545</td><td>-56.156</td><td>0.131</td><td>-71.613</td><td>-56.180</td><td>-56.142</td><td>-54.122</td></tr>
+<tr><td style="text-align:left">banos</td><td>164,404</td><td>1.521</td><td>0.831</td><td>0.000</td><td>1.000</td><td>2.000</td><td>23.000</td></tr>
+<tr><td style="text-align:left">dormitorios</td><td>148,922</td><td>2.075</td><td>1.155</td><td>0.000</td><td>1.000</td><td>3.000</td><td>25.000</td></tr>
+<tr><td style="text-align:left">sup_constru</td><td>165,545</td><td>96.502</td><td>78.250</td><td>10</td><td>50</td><td>110</td><td>499</td></tr>
+<tr><td style="text-align:left">sup_terr</td><td>43,981</td><td>225.362</td><td>953.122</td><td>0.000</td><td>56.000</td><td>175.000</td><td>38,000.000</td></tr>
+<tr><td colspan="8" style="border-bottom: 1px solid black"></td></tr></table>
+
+### Anomalías en algunas variables
+```{r echo=TRUE, , echo=TRUE}
+devtools::install_github("sicarul/xray")
+# Anomalías
+xray::anomalies(meli_sample)
+```
+
+La idea es usar el paquete xray para describir los datos
+```{r , echo=TRUE}
+# xray::distributions(meli_sample)
+# ver por qué no funciona
+```
+
+
+### Histograma de la variable precio
+```{r echo=TRUE, , echo=TRUE}
+meli_sample %>%
+  group_by(condicion) %>% 
+  ggplot(aes(x=precio/1000)) + 
+  geom_histogram(fill="red")+
+  theme_bw()+theme(axis.title = element_text(size=16),axis.text = element_text(size=14))+
+  ylab("Count")+  xlab("Precio en miles")+coord_cartesian(x=c(10, 700))+
+  ggtitle("Histograma de precio en miles de USD")+
+  geom_vline(aes(xintercept = mean(precio/1000)),col='BLUE',size=2)+
+  geom_vline(aes(xintercept = median(precio/1000)),col='green',size=2)
+quantile(meli_sample$precio/1000)
+mean(meli_sample$precio/1000)
+```
+
+### Histograma variable metro cuadrado construido
+```{r , echo=TRUE}
+
+qplot(meli_sample$sup_constru,
+      geom="histogram",
+      binwidth = 5,
+      main = "Histograma m2")
+  
+quantile(meli_sample$sup_constru)
+mean(meli_sample$sup_constru)
+```
+
+### Histograma variable precio por metro cuadrado construido
+
+```{r echo=TRUE, , echo=TRUE}
+qplot(meli_sample$precio/meli_sample$sup_constru,
+      geom="histogram",
+      binwidth = 100,  
+      main = "Histograma de precio por m2", 
+      xlab = "Precio m2",  
+      fill=I("blue"), 
+      col=I("red"), 
+      alpha=I(.2),
+      xlim=c(100,5000))
+quantile(meli_sample$precio/meli_sample$sup_constru,)
+mean(meli_sample$precio/meli_sample$sup_constru,)
+```
+
+
+
+### Mapeo de datos de MELI
+
+```{r echo=TRUE, , echo=TRUE}
+library(htmltools)
+library(dplyr)
+library(ggmap)
+library(leaflet)
+qpal <- colorQuantile("YlOrRd", meli_sample$precio/meli_sample$sup_constru, n = 9)
+
+mapa_meli <- leaflet(meli_sample) %>% 
+  addTiles() %>% 
+  fitBounds(-56.4,-34.9,-55.9,-34.8) %>% 
+  addCircleMarkers(stroke=FALSE, color=~qpal(meli_sample$precio/meli_sample$sup_constru),fillOpacity = 0.2, radius = runif(10, 2, 5),label = ~htmlEscape(lat)) %>% 
+  addLegend("bottomright", pal = qpal, values = ~meli_sample$precio/meli_sample$sup_constru,title = "USDM2 en USD 2018 (MELI)",opacity = 1)
+mapa_meli
+```
+
+
+
+# TRANSACCIONES
+
+Tomamos un sample de 500 transacciones del año 2018
+
+

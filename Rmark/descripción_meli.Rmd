@@ -1,0 +1,87 @@
+---
+title: "Proceso de recopilación y limpieza de datos del mercado inmobiliario uruguayo"
+subtitle: "Descripción de datos WEB"
+author: "Pablo Picardo"
+date: "noviembre de 2018"
+output: html_document
+---
+<style>
+
+table, td, th {
+  border: none;
+  padding-left: 1em;
+  padding-right: 1em;
+  min-width: 50%;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+## Breve descripción conceptual de los datos
+
+Se trata de una muestra para el período febrero - octubre de 2018 del portal mercadolibre.com.uy, de todas las operaciones de venta para la ciudad de Montevideo. Se realizaron bajadas sucesivas para cada mes de esta plataforma mediante la api provista del sitio. También se cuenta con datos de otras plataformas que podrían enriquecer el análisis en una etapa posterior.
+***
+Se realizó una limpieza preliminar de los datos, eliminando *duplicados totales*, recodificando variables para hacerlas coherentes y eliminando datos no coherentes. La estrategia de limpieza será desarrollada más adelante.
+***
+
+
+## Cargamos las librerías necesarias para esta primera etapa
+```{r librerias }
+library(data.table)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(DT)
+library(tidyr)
+library(corrplot)
+library(leaflet)
+library(lubridate)
+library(lattice)
+library(stargazer)
+library(reporttools)
+```
+
+
+## Datos numéricos descripción
+
+
+```{r carga datos meli, echo=FALSE}
+load("~/Housing-prices-tesina/muestra_var_meli99.Rda")
+# str(test_4)
+# stargazer(test_4, type = "html", column.sep.width = "5pt", font.size = "tiny", digits=1, title=" Datos descriptivos de variables numéricas")
+```
+A modo muy general, la base de datos cuenta con `r count(test_4)` observaciones, luego del proceso de limpieza. `r length(unique(unlist(test_4[1])))` corresponden a una publicación **única** en el sentido que tiene el mismo **ID**, en tanto que `r length(unique(unlist(test_4[c("id","precio")])))` corresponden a publicaciones que mantuvieron el mismo precio. **Ver valores debería ser menor**
+
+<table style="text-align:center"><caption><strong>Datos descriptivos de variables numéricas</strong></caption>
+<tr><td colspan="8" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Statistic</td><td>N</td><td>Mean</td><td>St. Dev.</td><td>Min</td><td>Pctl(25)</td><td>Pctl(75)</td><td>Max</td></tr>
+<tr><td colspan="8" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">precio</td><td>232,867</td><td>257,876.3</td><td>285,297.1</td><td>3,050</td><td>125,000</td><td>276,000</td><td>4,000,000</td></tr>
+<tr><td style="text-align:left">lat</td><td>185,337</td><td>-34.9</td><td>0.1</td><td>-35.7</td><td>-34.9</td><td>-34.9</td><td>-30.3</td></tr>
+<tr><td style="text-align:left">long</td><td>185,297</td><td>-56.2</td><td>0.1</td><td>-56.9</td><td>-56.2</td><td>-56.1</td><td>-54.1</td></tr>
+<tr><td style="text-align:left">banos</td><td>222,871</td><td>1.8</td><td>3.6</td><td>0.0</td><td>1.0</td><td>2.0</td><td>54.0</td></tr>
+<tr><td style="text-align:left">sup_constru</td><td>111,424</td><td>99.0</td><td>713.4</td><td>2.7</td><td>45.0</td><td>75.0</td><td>57,394.0</td></tr>
+<tr><td style="text-align:left">sup_tot</td><td>174,227</td><td>445.4</td><td>3,311.4</td><td>0.0</td><td>53.0</td><td>169.0</td><td>100,000.0</td></tr>
+<tr><td style="text-align:left">sup_terr</td><td>57,357</td><td>484.1</td><td>3,482.2</td><td>0.0</td><td>55.0</td><td>204.0</td><td>100,000.0</td></tr>
+<tr><td style="text-align:left">expensas</td><td>72,859</td><td>4,577.1</td><td>6,584.4</td><td>0.0</td><td>0.0</td><td>5,500.0</td><td>96,000.0</td></tr>
+<tr><td style="text-align:left">pisos</td><td>55,551</td><td>4.4</td><td>4.3</td><td>0.0</td><td>1.0</td><td>10.0</td><td>31.0</td></tr>
+<tr><td style="text-align:left">cocheras</td><td>138,247</td><td>0.6</td><td>2.2</td><td>0.0</td><td>0.0</td><td>1.0</td><td>284.0</td></tr>
+<tr><td style="text-align:left">piso_unid</td><td>17,180</td><td>3.8</td><td>2.9</td><td>0.0</td><td>1.0</td><td>6.0</td><td>10.0</td></tr>
+<tr><td style="text-align:left">metros_frente</td><td>483</td><td>44.2</td><td>128.5</td><td>1.0</td><td>10.0</td><td>23.0</td><td>1,050.0</td></tr>
+<tr><td style="text-align:left">metros_fondo</td><td>384</td><td>46.5</td><td>41.6</td><td>8.6</td><td>30.0</td><td>50.0</td><td>442.0</td></tr>
+<tr><td style="text-align:left">sup_balcon</td><td>7,738</td><td>11.7</td><td>30.1</td><td>0.0</td><td>2.0</td><td>10.0</td><td>700.0</td></tr>
+<tr><td style="text-align:left">antiguedad2</td><td>89,193</td><td>17.9</td><td>21.4</td><td>0.0</td><td>0.0</td><td>40.0</td><td>228.0</td></tr>
+<tr><td colspan="8" style="border-bottom: 1px solid black"></td></tr></table>
+
+## Datos factores
+```{r , echo=FALSE}
+
+```
